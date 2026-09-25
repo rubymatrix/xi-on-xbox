@@ -5,8 +5,14 @@
 # Needs Device Portal on (Dev Home > Remote Access Settings); asks for its user name and password.
 # The package is signed with a self-signed test certificate made on first use (build\XIonXbox.pfx,
 # not in git): dev mode installs test-signed packages, and nothing here is published.
+#   powershell -File tools\deploy-xbox.ps1 -PackageOnly
+#
+# -PackageOnly stops once the package is signed (build\XIonXbox-xbox.msix, with build\XIonXbox.cer):
+# for installing it from another computer on the Xbox's network, in Device Portal's page
+# (https://<Xbox>:11443, Add), when this one cannot reach the console.
 param(
-    [Parameter(Mandatory = $true)][string]$Xbox,
+    [string]$Xbox,
+    [switch]$PackageOnly,
     [string]$Configuration = 'Release',
     [System.Management.Automation.PSCredential]$Credential
 )
@@ -42,6 +48,11 @@ Copy-Item $package.FullName $signed -Force
 & (Join-Path $sdkbin 'signtool.exe') sign /fd SHA256 /f $pfx $signed | Out-Null   # the .pfx has no password
 if ($LASTEXITCODE) { throw "signing failed" }
 "signed $signed"
+if ($PackageOnly) {
+    "for Device Portal's Add: $signed and its certificate $cer"
+    return
+}
+if (-not $Xbox) { throw "-Xbox <IP address>, or -PackageOnly" }
 
 # --- install through Device Portal --------------------------------------------------------------------------
 if (-not $Credential) { $Credential = Get-Credential -Message "Device Portal on $Xbox (Dev Home > Remote Access Settings)" }

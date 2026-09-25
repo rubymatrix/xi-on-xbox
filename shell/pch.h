@@ -4,6 +4,9 @@
 #include <windows.h>
 #include <unknwn.h>
 
+#include <dxgi1_4.h>
+#include <windows.ui.xaml.media.dxinterop.h>
+
 #include <winrt/Windows.ApplicationModel.Activation.h>
 #include <winrt/Windows.Foundation.Collections.h>
 #include <winrt/Windows.Foundation.h>

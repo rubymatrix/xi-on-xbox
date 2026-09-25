@@ -126,6 +126,54 @@ namespace
         uwp_gamepad(&pad);
     }
 
+    // --- the picture: the D3D12 back end's swap chain in a SwapChainPanel -----------------------------------
+    SwapChainPanel g_panel{ nullptr };
+    CoreDispatcher g_ui{ nullptr };
+    std::function<void()> g_on_attached;
+
+    // The view's size in pixels.
+    std::pair<int, int> view_pixels()
+    {
+        auto b = Window::Current().CoreWindow().Bounds();
+        double scale = Windows::Graphics::Display::DisplayInformation::GetForCurrentView().RawPixelsPerViewPixel();
+        return { (int)(b.Width * scale + 0.5), (int)(b.Height * scale + 0.5) };
+    }
+
+    // The game's settings (its registry key) for a player who brought none: the view's resolution,
+    // windowed (the view is the window), and the retail controller layout. Written once; edit or replace
+    // LocalState\settings.reg to change them.
+    void write_default_settings(std::wstring const& path)
+    {
+        auto [w, h] = view_pixels();
+        if (w < 640 || h < 480)
+            w = 1920, h = 1080;
+        FILE* f = _wfopen(path.c_str(), L"w");
+        if (!f)
+            return;
+        fprintf(f,
+            "REGEDIT4\n\n"
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\PlayOnlineUS\\SquareEnix\\FinalFantasyXI]\n"
+            "\"0000\"=dword:00000006\n"          // mip mapping
+            "\"0001\"=dword:%08x\n"              // window width
+            "\"0002\"=dword:%08x\n"              // window height
+            "\"0003\"=dword:00001000\n"          // background resolution
+            "\"0004\"=dword:00001000\n"
+            "\"0007\"=dword:00000001\n"          // sound
+            "\"0011\"=dword:00000001\n"          // environment animation
+            "\"0017\"=dword:00000001\n"          // bump mapping
+            "\"0018\"=dword:00000001\n"          // texture compression
+            "\"0019\"=dword:00000001\n"          // map compression
+            "\"0022\"=dword:00000001\n"          // hardware mouse
+            "\"0034\"=dword:00000001\n"          // windowed
+            "\"0035\"=dword:00000001\n"          // always on top
+            "\"0037\"=dword:%08x\n"              // interface (menu) resolution
+            "\"0038\"=dword:%08x\n"
+            "\"padmode000\"=\"1,1,0,0,0,1\"\n"
+            "\"padsin000\"=\"8,9,13,12,10,0,1,3,2,15,-1,-1,14,-33,-33,32,32,-36,-36,35,35,6,7,5,4,11,-1\"\n",
+            w, h, w / 2, h / 2);
+        fclose(f);
+    }
+
     void rumble(uint16_t low, uint16_t high)
     {
         auto pads = Gamepad::Gamepads();
@@ -178,6 +226,31 @@ extern "C" int uwp_tls_exchange(uint32_t server, uint16_t port, const char* requ
     }
 }
 
+// --- the swap chain (uwp_bridge.h): SwapChainPanel wants it on the UI thread -------------------------------
+extern "C" void uwp_attach_swapchain(void* swap_chain)
+{
+    com_ptr<IDXGISwapChain1> chain;
+    chain.copy_from(static_cast<IDXGISwapChain1*>(swap_chain));
+    HANDLE done = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+    g_ui.RunAsync(CoreDispatcherPriority::High, [chain, done] {
+        HRESULT hr = g_panel.as<ISwapChainPanelNative>()->SetSwapChain(chain.get());
+        // the buffers are in pixels; the panel lays out in view pixels
+        if (auto sc2 = chain.try_as<IDXGISwapChain2>())
+        {
+            DXGI_MATRIX_3X2_F m{};
+            m._11 = 1.0f / g_panel.CompositionScaleX();
+            m._22 = 1.0f / g_panel.CompositionScaleY();
+            sc2->SetMatrixTransform(&m);
+        }
+        fprintf(stderr, "[app] swap chain in the panel (%08lx)\n", (unsigned long)hr);
+        if (SUCCEEDED(hr) && g_on_attached)
+            g_on_attached();
+        SetEvent(done);
+    });
+    WaitForSingleObject(done, INFINITE);
+    CloseHandle(done);
+}
+
 std::wstring GameHost::LogPath() { return local_folder() + L"\\host64.log"; }
 
 UIElement GameHost::Start(LoginDetails const& d, SignInResult const& r, GameOptions const& o, std::function<void(int)> on_exit)
@@ -188,13 +261,15 @@ UIElement GameHost::Start(LoginDetails const& d, SignInResult const& r, GameOpti
     std::wstring local = local_folder();
     CreateDirectoryW((local + L"\\USER").c_str(), nullptr);
     std::vector<std::string> args = { utf8(local + L"\\host64.exe"), "--game", o.game_dir, "--user-dir", utf8(local + L"\\USER") };
-    std::wstring overlay = local + L"\\settings.reg"; // the game's settings, if one was put there
-    if (GetFileAttributesW(overlay.c_str()) != INVALID_FILE_ATTRIBUTES)
-        args.insert(args.end(), { "--reg-overlay", utf8(overlay) });
+    std::wstring overlay = local + L"\\settings.reg"; // the game's settings: ours, until one is put there
+    if (GetFileAttributesW(overlay.c_str()) == INVALID_FILE_ATTRIBUTES)
+        write_default_settings(overlay);
+    args.insert(args.end(), { "--reg-overlay", utf8(overlay) });
     for (auto& a : HostArguments(d, r))
         args.push_back(a);
 
     _putenv_s("FFXI_PROFILE", o.profile ? "1" : "0");
+    _putenv_s("FFXI_CACHE_DIR", utf8(local).c_str()); // the D3D12 pipeline cache
     // stdout and stderr (every [recomp] and [gfx] line) to LocalState\host64.log
     std::wstring log = LogPath();
     _wfreopen(log.c_str(), L"w", stderr);
@@ -225,12 +300,13 @@ UIElement GameHost::Start(LoginDetails const& d, SignInResult const& r, GameOpti
         });
     }).detach();
 
-    // the screen: what the game is doing, from its log (nothing is drawn yet)
+    // the screen: the game's swap chain, with its log on top until the first frame is shown
     StackPanel panel;
     panel.Padding(ThicknessHelper::FromUniformLength(32));
     panel.Spacing(12);
+    m_overlay = panel;
     m_title = TextBlock();
-    m_title.Text(L"FINAL FANTASY XI is running (no graphics yet)");
+    m_title.Text(L"Starting FINAL FANTASY XI...");
     m_title.FontSize(24);
     panel.Children().Append(m_title);
     TextBlock where;
@@ -246,6 +322,10 @@ UIElement GameHost::Start(LoginDetails const& d, SignInResult const& r, GameOpti
     Grid root;
     root.RequestedTheme(ElementTheme::Dark);
     root.Background(SolidColorBrush(Windows::UI::ColorHelper::FromArgb(255, 0, 0, 0)));
+    g_panel = SwapChainPanel();
+    g_ui = Window::Current().Dispatcher();
+    g_on_attached = [this] { m_overlay.Visibility(Visibility::Collapsed); };
+    root.Children().Append(g_panel);
     root.Children().Append(panel);
 
     m_timer = DispatcherTimer();
@@ -277,7 +357,10 @@ void GameHost::PollLog()
         }
     m_log.Text(to_hstring(tail.substr(cut)));
     if (!g_running)
+    {
         m_title.Text(L"The game has ended (host returned " + to_hstring(g_exit_code.load()) + L")");
+        m_overlay.Visibility(Visibility::Visible);
+    }
 }
 
 void GameHost::HookInput()

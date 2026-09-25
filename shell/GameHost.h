@@ -1,7 +1,7 @@
 // Runs FFXIRecompile's game host (host64's main, linked in as host_main from ffxi_uwp.lib) on its
 // own thread, and connects it to the app: the window's keyboard, mouse and focus, the controller
-// (Windows.Gaming.Input), and a log in LocalState. Graphics are the null back end for now, so the
-// screen shows the log's tail while the game runs.
+// (Windows.Gaming.Input), a log in LocalState, and the picture: the Direct3D 12 back end's swap chain
+// in a SwapChainPanel. The log's tail shows on top until the first frame, and again when the game ends.
 #pragma once
 
 #include <functional>
@@ -29,6 +29,7 @@ private:
     void PollLog();
 
     winrt::Windows::UI::Xaml::Controls::TextBlock m_title{ nullptr }, m_log{ nullptr };
+    winrt::Windows::UI::Xaml::UIElement m_overlay{ nullptr }; // the log, over the picture until it starts
     winrt::Windows::UI::Xaml::DispatcherTimer m_timer{ nullptr };
     std::function<void(int)> m_on_exit;
     bool m_hooked = false;

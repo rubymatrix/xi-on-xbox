@@ -62,7 +62,7 @@
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
       <!-- WindowsApp.lib is the only Windows import library: an unresolved import is a Win32 call UWP
            does not allow -->
-      <AdditionalDependencies>$(FFXIRecompileDir)build\uwp\ffxi_uwp.lib;WindowsApp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(FFXIRecompileDir)build\uwp\ffxi_uwp.lib;WindowsApp.lib;d3d12.lib;dxgi.lib;d3dcompiler.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

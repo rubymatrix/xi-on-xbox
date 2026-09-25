@@ -29,6 +29,9 @@
 #include <winrt/Windows.UI.Xaml.Media.h>
 #include <winrt/Windows.UI.Xaml.h>
 #include <winrt/Windows.UI.h>
+#include <winrt/Windows.Web.Http.Filters.h>
+#include <winrt/Windows.Web.Http.Headers.h>
+#include <winrt/Windows.Web.Http.h>
 
 #include <algorithm>
 #include <atomic>

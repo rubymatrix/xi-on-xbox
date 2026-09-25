@@ -6,6 +6,7 @@
 
 #include <functional>
 
+#include "GameCopy.h"
 #include "Session.h"
 
 class LoginScreen
@@ -34,5 +35,6 @@ private:
     winrt::Windows::UI::Xaml::Controls::Button m_signin{ nullptr };
     winrt::Windows::UI::Xaml::Controls::ProgressRing m_busy{ nullptr };
     winrt::Windows::UI::Xaml::Controls::TextBlock m_status{ nullptr };
+    GameCopy m_copy;
     bool m_loading = false;
 };

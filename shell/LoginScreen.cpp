@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "Display.h"
+#include "GameCopy.h"
 #include "LoginScreen.h"
 #include "Settings.h"
 
@@ -103,6 +104,9 @@ UIElement LoginScreen::Build(SignedInHandler on_signed_in)
     panel.Children().Append(m_otp);
     m_game = text_box(L"FINAL FANTASY XI folder", L"C:\\...\\SquareEnix\\FINAL FANTASY XI");
     panel.Children().Append(m_game);
+    // no install to point at (an Xbox): copy one from a computer on the network
+    UIElement copy = m_copy.Build([this](std::wstring const& folder) { m_game.Text(folder); });
+    panel.Children().Append(copy);
     m_remember = CheckBox();
     m_remember.Content(box_value(L"Remember the password on this device"));
     panel.Children().Append(m_remember);
@@ -160,7 +164,9 @@ UIElement LoginScreen::Build(SignedInHandler on_signed_in)
         auto it = std::find(m_resolutions.begin(), m_resolutions.end(), res);
         m_resolution.SelectedIndex(it == m_resolutions.end() ? 0 : (int32_t)(it - m_resolutions.begin()));
     }
-    m_game.Text(to_hstring(or_default(saved.game_dir, LOCAL_GAME_DIR)));
+    // the game folder: the one used last, else a copy made here, else this machine's default
+    std::string copied = HaveCopiedGame() ? to_string(CopiedGameFolder()) : std::string();
+    m_game.Text(to_hstring(or_default(saved.game_dir, copied.empty() ? LOCAL_GAME_DIR : copied.c_str())));
     m_loading = false;
 
     auto mode_changed = [this](auto&&, auto&&) {

@@ -59,6 +59,32 @@ namespace
         }
     }
 
+    // An operation's result, or a timeout error (the operation cancelled) after secs. Without it a
+    // stalled connection held its download forever, and with every download held the copy stopped.
+    constexpr int CONNECT_SECS = 20, IDLE_SECS = 30;
+    template <typename Op>
+    auto within(Op const& op, int secs)
+    {
+        if (op.wait_for(std::chrono::seconds(secs)) == AsyncStatus::Started)
+        {
+            op.Cancel();
+            throw hresult_error(HRESULT_FROM_WIN32(ERROR_TIMEOUT), L"no answer for " + to_hstring(secs) + L" s");
+        }
+        return op.GetResults();
+    }
+
+    struct FileHandle // closed however copy_one leaves: an open .part blocked its own retries
+    {
+        HANDLE h;
+        ~FileHandle()
+        {
+            if (h != INVALID_HANDLE_VALUE)
+                CloseHandle(h);
+        }
+    };
+
+    std::atomic<uint64_t> g_retries;
+
     // One file into place: skipped if complete, resumed from its .part if one is there. 1 on success.
     bool copy_one(HttpClient const& http, std::wstring const& base, Entry const& e, uint64_t& counted)
     {
@@ -77,37 +103,40 @@ namespace
         HttpRequestMessage req(HttpMethod::Get(), Uri(url_for(base, e.path)));
         if (have)
             req.Headers().TryAppendWithoutValidation(L"Range", L"bytes=" + to_hstring(have) + L"-");
-        HttpResponseMessage resp = http.SendRequestAsync(req, HttpCompletionOption::ResponseHeadersRead).get();
+        HttpResponseMessage resp = within(http.SendRequestAsync(req, HttpCompletionOption::ResponseHeadersRead), CONNECT_SECS);
         if (!resp.IsSuccessStatusCode())
             throw hresult_error(E_FAIL, L"HTTP " + to_hstring((int32_t)resp.StatusCode()) + L" for " + e.path);
         if (resp.StatusCode() != HttpStatusCode::PartialContent)
             have = 0; // the whole file came: start over
-        HANDLE f = CreateFile2(part.c_str(), GENERIC_WRITE, 0, have ? OPEN_EXISTING : CREATE_ALWAYS, nullptr);
-        if (f == INVALID_HANDLE_VALUE)
-            throw hresult_error(HRESULT_FROM_WIN32(GetLastError()), L"cannot write " + e.path);
-        LARGE_INTEGER end{};
-        end.QuadPart = (LONGLONG)have;
-        SetFilePointerEx(f, end, nullptr, FILE_BEGIN);
-        g_bytes_done += have, counted += have;
-        IInputStream in = resp.Content().ReadAsInputStreamAsync().get();
-        Buffer buf(1 << 20);
         uint64_t got = have;
         bool ok = true;
-        for (;;)
         {
-            IBuffer r = in.ReadAsync(buf, buf.Capacity(), InputStreamOptions::Partial).get();
-            if (!r.Length())
-                break;
-            DWORD wrote = 0;
-            if (!WriteFile(f, r.data(), r.Length(), &wrote, nullptr) || wrote != r.Length())
+            FileHandle f{ CreateFile2(part.c_str(), GENERIC_WRITE, 0, have ? OPEN_EXISTING : CREATE_ALWAYS, nullptr) };
+            if (f.h == INVALID_HANDLE_VALUE)
+                throw hresult_error(HRESULT_FROM_WIN32(GetLastError()), L"cannot write " + e.path);
+            LARGE_INTEGER end{};
+            end.QuadPart = (LONGLONG)have;
+            SetFilePointerEx(f.h, end, nullptr, FILE_BEGIN);
+            g_bytes_done += have, counted += have;
+            IInputStream in = within(resp.Content().ReadAsInputStreamAsync(), CONNECT_SECS);
+            Buffer buf(1 << 20);
+            for (;;)
             {
-                ok = false;
-                break;
+                IBuffer r = within(in.ReadAsync(buf, buf.Capacity(), InputStreamOptions::Partial), IDLE_SECS);
+                if (!r.Length())
+                    break;
+                DWORD wrote = 0;
+                if (!WriteFile(f.h, r.data(), r.Length(), &wrote, nullptr) || wrote != r.Length())
+                {
+                    ok = false;
+                    break;
+                }
+                got += wrote;
+                g_bytes_done += wrote, counted += wrote;
             }
-            got += wrote;
-            g_bytes_done += wrote, counted += wrote;
+            in.Close();
+            resp.Close(); // its connection back to the pool now, not whenever the object goes
         }
-        CloseHandle(f);
         if (!ok || got != e.size)
             throw hresult_error(E_FAIL, L"short copy of " + e.path);
         if (!MoveFileExW(part.c_str(), dst.c_str(), MOVEFILE_REPLACE_EXISTING))
@@ -121,11 +150,12 @@ namespace
         HttpBaseProtocolFilter filter;
         filter.CacheControl().ReadBehavior(HttpCacheReadBehavior::NoCache); // no second 14 GB in the cache
         filter.CacheControl().WriteBehavior(HttpCacheWriteBehavior::NoCache);
+        filter.MaxConnectionsPerServer(WORKERS); // one each: the default is fewer
         HttpClient http(filter);
         std::vector<Entry> files;
         try
         {
-            std::wstring manifest = http.GetStringAsync(Uri(base + L"/manifest")).get().c_str();
+            std::wstring manifest = within(http.GetStringAsync(Uri(base + L"/manifest")), 60).c_str();
             size_t at = 0;
             while (at < manifest.size())
             {
@@ -164,6 +194,7 @@ namespace
                         }
                         catch (hresult_error const& ex)
                         {
+                            ++g_retries;
                             g_bytes_done -= counted;
                             std::lock_guard<std::mutex> hold(g_error_lock);
                             g_error = ex.message().c_str();
@@ -258,7 +289,8 @@ void GameCopy::ShowProgress()
     wchar_t rate[32];
     swprintf(rate, 32, L"%.0f MB/s", secs > 0 ? done / 1e6 / secs : 0.0);
     m_status.Text(L"Copying: " + hstring(gb(done)) + L" of " + hstring(gb(total)) + L" GB, " +
-                  to_hstring(g_files_done.load()) + L" of " + to_hstring(g_files_total.load()) + L" files, " + rate);
+                  to_hstring(g_files_done.load()) + L" of " + to_hstring(g_files_total.load()) + L" files, " + rate +
+                  (g_retries ? L", " + to_hstring(g_retries.load()) + L" retried" : L""));
 }
 
 fire_and_forget GameCopy::Start()
@@ -278,7 +310,7 @@ fire_and_forget GameCopy::Start()
         addr = L"http://" + addr;
     if (addr.find(L':', 7) == std::wstring::npos)
         addr += L":8765";
-    g_bytes_done = g_bytes_total = g_files_done = g_files_total = g_failed = 0;
+    g_bytes_done = g_bytes_total = g_files_done = g_files_total = g_failed = g_retries = 0;
     g_started = std::chrono::steady_clock::now();
     m_copy.IsEnabled(false);
     m_address.IsEnabled(false);

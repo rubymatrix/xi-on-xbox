@@ -5,7 +5,7 @@
   xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
   IgnorableNamespaces="uap mp">
 
-  <Identity Name="XIonXbox" Publisher="CN=XIonXbox" Version="0.1.0.0" />
+  <Identity Name="XIonXbox" Publisher="CN=XIonXbox" Version="0.1.1.0" />
 
   <mp:PhoneIdentity PhoneProductId="05aec10a-b923-458e-a4d2-383b6e7a1330" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
 

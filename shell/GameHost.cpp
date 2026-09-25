@@ -271,6 +271,8 @@ UIElement GameHost::Start(LoginDetails const& d, SignInResult const& r, GameOpti
 
     _putenv_s("FFXI_PROFILE", o.profile ? "1" : "0");
     _putenv_s("FFXI_CACHE_DIR", utf8(local).c_str()); // the D3D12 pipeline cache
+    if (o.profile) // where the game thread's time goes (FFXIRecompile's tools/sample_report.py)
+        _putenv_s("FFXI_SAMPLE", utf8(local + L"\\samples.bin").c_str());
     // stdout and stderr (every [recomp] and [gfx] line) to LocalState\host64.log
     std::wstring log = LogPath();
     _wfreopen(log.c_str(), L"w", stderr);

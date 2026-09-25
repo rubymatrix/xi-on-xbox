@@ -59,6 +59,9 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
+      <!-- FFXIRecompile's tools/sample_report.py resolves FFXI_SAMPLE's addresses with it -->
+      <GenerateMapFile>true</GenerateMapFile>
+      <MapFileName>$(OutDir)$(TargetName).map</MapFileName>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
       <!-- WindowsApp.lib is the only Windows import library: an unresolved import is a Win32 call UWP
            does not allow -->

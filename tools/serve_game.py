@@ -111,6 +111,12 @@ def main():
         daemon_threads = True
         allow_reuse_address = True
 
+        def handle_error(self, request, client_address):
+            # the client closing a kept-alive connection, or cancelling a download, is not an error
+            if isinstance(sys.exc_info()[1], (ConnectionResetError, BrokenPipeError, ConnectionAbortedError, TimeoutError)):
+                return
+            super().handle_error(request, client_address)
+
     server = Server((a.bind, a.port), Handler)
     print('sharing %d files, %.1f GB' % (len(files), total / 1e9))
     print('on the Xbox, in XI on Xbox > Copy game from a computer, enter one of:')

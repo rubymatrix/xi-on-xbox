@@ -235,6 +235,19 @@ extern "C" void uwp_attach_swapchain(void* swap_chain)
     CloseHandle(done);
 }
 
+// Windows lists controllers a moment after an app first listens for them, and the game enumerates
+// its pads once, as it starts (DirectInput EnumDevices): so listening begins at launch, not at sign-in.
+void GameHost::WatchControllers()
+{
+    Gamepad::GamepadAdded([](auto&&, Gamepad const&) {
+        fprintf(stderr, "[app] controller connected (%u in all)\n", Gamepad::Gamepads().Size());
+    });
+    Gamepad::GamepadRemoved([](auto&&, Gamepad const&) {
+        fprintf(stderr, "[app] controller disconnected (%u left)\n", Gamepad::Gamepads().Size());
+    });
+    Gamepad::Gamepads();
+}
+
 std::wstring GameHost::LogPath() { return local_folder() + L"\\host64.log"; }
 
 UIElement GameHost::Start(LoginDetails const& d, SignInResult const& r, GameOptions const& o, std::function<void(int)> on_exit)
@@ -269,6 +282,9 @@ UIElement GameHost::Start(LoginDetails const& d, SignInResult const& r, GameOpti
 
     uwp_set_rumble(rumble);
     HookInput();
+    // the controller's state before the game looks for pads, which it does once, as it starts
+    poll_gamepad();
+    fprintf(stderr, "[app] controllers at start: %u\n", Gamepad::Gamepads().Size());
 
     g_running = true;
     std::thread([args, ui = Window::Current().Dispatcher(), this]() mutable {
@@ -412,16 +428,7 @@ void GameHost::HookInput()
     Windows::UI::Core::SystemNavigationManager::GetForCurrentView().BackRequested(
         [](auto&&, Windows::UI::Core::BackRequestedEventArgs const& e) { e.Handled(true); });
 
-    // The controllers: Gamepads can stay empty until something listens for arrivals; these also log.
-    Gamepad::GamepadAdded([](auto&&, Gamepad const&) {
-        fprintf(stderr, "[app] controller connected (%u in all)\n", Gamepad::Gamepads().Size());
-    });
-    Gamepad::GamepadRemoved([](auto&&, Gamepad const&) {
-        fprintf(stderr, "[app] controller disconnected (%u left)\n", Gamepad::Gamepads().Size());
-    });
-    fprintf(stderr, "[app] controllers at start: %u\n", Gamepad::Gamepads().Size());
-
-    // the first one's state, 125 times a second
+    // the first controller's state, 125 times a second
     std::thread([] {
         while (true)
         {

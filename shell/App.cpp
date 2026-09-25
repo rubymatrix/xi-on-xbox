@@ -48,6 +48,7 @@ struct App : ApplicationT<App>
 
     void OnLaunched(LaunchActivatedEventArgs const&)
     {
+        GameHost::WatchControllers();
         Window window = Window::Current();
         try
         {

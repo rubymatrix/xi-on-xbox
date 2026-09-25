@@ -26,6 +26,8 @@ public:
         std::function<void(int)> on_exit);
 
     static std::wstring LogPath();
+    // Starts listening for controllers; call at launch (see GameHost.cpp).
+    static void WatchControllers();
 
 private:
     void HookInput();

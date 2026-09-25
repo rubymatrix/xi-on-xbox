@@ -131,6 +131,32 @@ namespace
     CoreDispatcher g_ui{ nullptr };
     std::function<void()> g_on_attached;
 
+    // Copies the files under from that are missing under to, folders included; never overwrites. The
+    // install's USER folder (per character: cnf.dat - the Config menu, camera included - key
+    // bindings, macros) seeds the app's, so a player keeps their settings. 0: nothing to copy.
+    unsigned copy_missing(std::wstring const& from, std::wstring const& to)
+    {
+        WIN32_FIND_DATAW fd;
+        HANDLE h = FindFirstFileExW((from + L"\\*").c_str(), FindExInfoBasic, &fd, FindExSearchNameMatch, nullptr, 0);
+        if (h == INVALID_HANDLE_VALUE)
+            return 0;
+        unsigned copied = 0;
+        CreateDirectoryW(to.c_str(), nullptr);
+        do
+        {
+            std::wstring name = fd.cFileName;
+            if (name == L"." || name == L"..")
+                continue;
+            std::wstring src = from + L"\\" + name, dst = to + L"\\" + name;
+            if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+                copied += copy_missing(src, dst);
+            else if (GetFileAttributesW(dst.c_str()) == INVALID_FILE_ATTRIBUTES && SUCCEEDED(CopyFile2(src.c_str(), dst.c_str(), nullptr)))
+                ++copied;
+        } while (FindNextFileW(h, &fd));
+        FindClose(h);
+        return copied;
+    }
+
     // The game's settings (its registry key) for a player who brought none: windowed (the view is the
     // window) and the retail controller layout. Written once; the game keeps its own changes in it,
     // and the resolution is set on every start (SetGameResolution).
@@ -256,6 +282,7 @@ UIElement GameHost::Start(LoginDetails const& d, SignInResult const& r, GameOpti
 
     // the host's command line: argv[0] in LocalState, where it writes patch.<version>.ver
     std::wstring local = local_folder();
+    unsigned seeded = copy_missing(to_hstring(o.game_dir).c_str() + std::wstring(L"\\USER"), local + L"\\USER");
     CreateDirectoryW((local + L"\\USER").c_str(), nullptr);
     std::vector<std::string> args = { utf8(local + L"\\host64.exe"), "--game", o.game_dir, "--user-dir", utf8(local + L"\\USER") };
     std::wstring overlay = local + L"\\settings.reg"; // the game's settings: ours, until one is put there
@@ -279,6 +306,8 @@ UIElement GameHost::Start(LoginDetails const& d, SignInResult const& r, GameOpti
     setvbuf(stderr, nullptr, _IONBF, 0);
     fprintf(stderr, "[app] starting the game: %s at %dx%d (%s)\n", o.game_dir.c_str(), res.first, res.second,
         o.resolution.first ? "chosen" : "the screen's");
+    if (seeded)
+        fprintf(stderr, "[app] USER: %u file(s) copied from the install's USER folder (settings, key bindings, macros)\n", seeded);
 
     uwp_set_rumble(rumble);
     HookInput();

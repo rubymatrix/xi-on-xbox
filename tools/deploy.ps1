@@ -26,14 +26,16 @@ $sdkbin = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.*" -Dir
     ForEach-Object { Join-Path $_.FullName 'x64\makeappx.exe' } | Where-Object { Test-Path $_ } | Select-Object -First 1
 
 $layout = Join-Path $root 'build\layout'
-Get-AppxPackage -Name XIonXbox | Remove-AppxPackage   # the previous registration holds the folder
-if (Test-Path $layout) { Remove-Item $layout -Recurse -Force }
+# Updated in place: uninstalling (Remove-AppxPackage) would delete the app's data - LocalState (logs,
+# settings.reg, the game's USER folder, the pipeline cache) and the saved login.
+Get-Process XIonXbox -ErrorAction SilentlyContinue | Stop-Process -Force
+Start-Sleep -Milliseconds 500
 & $sdkbin unpack /p $package.FullName /d $layout /o | Out-Null
 if ($LASTEXITCODE) { throw "makeappx unpack failed" }
 Remove-Item (Join-Path $layout 'AppxSignature.p7x') -ErrorAction SilentlyContinue
 Remove-Item (Join-Path $layout 'AppxBlockMap.xml') -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath (Join-Path $layout '[Content_Types].xml') -ErrorAction SilentlyContinue
-Add-AppxPackage -Register (Join-Path $layout 'AppxManifest.xml')
+Add-AppxPackage -Register (Join-Path $layout 'AppxManifest.xml') -ForceApplicationShutdown -ForceUpdateFromAnyVersion
 
 $app = Get-AppxPackage -Name XIonXbox
 "installed $($app.PackageFullName)"

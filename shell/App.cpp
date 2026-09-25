@@ -38,6 +38,9 @@ struct App : ApplicationT<App>
 
     App()
     {
+        // Xbox: XAML apps start in "mouse mode", where the controller moves a pointer and A clicks.
+        // The controller belongs to the game; the login screen uses it for focus navigation.
+        RequiresPointerMode(ApplicationRequiresPointerMode::WhenRequested);
         UnhandledException([](auto&&, UnhandledExceptionEventArgs const& e) {
             log(L"unhandled: " + std::wstring(e.Message().c_str()) + L" (" + std::to_wstring(e.Exception()) + L")");
         });

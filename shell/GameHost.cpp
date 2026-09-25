@@ -408,7 +408,20 @@ void GameHost::HookInput()
     });
     uwp_focus(1);
 
-    // the controller, 125 times a second
+    // B is also the system's Back: while the game runs it is the game's button, not a navigation
+    Windows::UI::Core::SystemNavigationManager::GetForCurrentView().BackRequested(
+        [](auto&&, Windows::UI::Core::BackRequestedEventArgs const& e) { e.Handled(true); });
+
+    // The controllers: Gamepads can stay empty until something listens for arrivals; these also log.
+    Gamepad::GamepadAdded([](auto&&, Gamepad const&) {
+        fprintf(stderr, "[app] controller connected (%u in all)\n", Gamepad::Gamepads().Size());
+    });
+    Gamepad::GamepadRemoved([](auto&&, Gamepad const&) {
+        fprintf(stderr, "[app] controller disconnected (%u left)\n", Gamepad::Gamepads().Size());
+    });
+    fprintf(stderr, "[app] controllers at start: %u\n", Gamepad::Gamepads().Size());
+
+    // the first one's state, 125 times a second
     std::thread([] {
         while (true)
         {

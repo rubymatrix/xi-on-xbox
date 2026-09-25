@@ -67,6 +67,7 @@ struct App : ApplicationT<App>
         GameOptions o;
         o.game_dir = game;
         o.fps = LoadFps();
+        o.resolution = ParseResolution(LoadResolution()); // {0, 0}: the screen's
         Window::Current().Content(m_game.Start(d, r, o, [](int code) {
             log(L"the game ended: " + std::to_wstring(code));
             SignOut();

@@ -70,6 +70,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Display.h" />
     <ClInclude Include="GameHost.h" />
     <ClInclude Include="LoginScreen.h" />
     <ClInclude Include="Session.h" />
@@ -80,6 +81,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="App.cpp" />
+    <ClCompile Include="Display.cpp" />
     <ClCompile Include="GameHost.cpp" />
     <ClCompile Include="LoginScreen.cpp" />
     <ClCompile Include="Session.cpp" />

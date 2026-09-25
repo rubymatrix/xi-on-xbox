@@ -81,6 +81,13 @@ void SaveFps(int fps)
     ApplicationData::Current().LocalSettings().Values().Insert(L"fps", box_value(int32_t(fps == 60 ? 60 : 30)));
 }
 
+std::string LoadResolution() { return text(ApplicationData::Current().LocalSettings().Values(), L"resolution"); }
+
+void SaveResolution(std::string const& res)
+{
+    ApplicationData::Current().LocalSettings().Values().Insert(L"resolution", box_value(to_hstring(res)));
+}
+
 // the ID field shows the one saved for the mode switched to
 std::string SavedId(LoginMode m)
 {

@@ -11,6 +11,7 @@
 #include <winrt/Windows.Foundation.Collections.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Gaming.Input.h>
+#include <winrt/Windows.Graphics.Display.Core.h>
 #include <winrt/Windows.Graphics.Display.h>
 #include <winrt/Windows.Networking.Sockets.h>
 #include <winrt/Windows.Networking.h>

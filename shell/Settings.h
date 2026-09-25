@@ -16,5 +16,8 @@ void SaveLogin(LoginDetails const& d, bool remember_password, std::string const&
 // The frame rate to run the game at: 30 (as it shipped, the default) or 60.
 int LoadFps();
 void SaveFps(int fps);
+// The game's resolution: "" for the screen's (the default), else "WIDTHxHEIGHT".
+std::string LoadResolution();
+void SaveResolution(std::string const& text);
 // The ID last used with a mode (the PlayOnline ID and the direct account are kept apart).
 std::string SavedId(LoginMode m);

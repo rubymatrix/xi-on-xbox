@@ -131,22 +131,11 @@ namespace
     CoreDispatcher g_ui{ nullptr };
     std::function<void()> g_on_attached;
 
-    // The view's size in pixels.
-    std::pair<int, int> view_pixels()
-    {
-        auto b = Window::Current().CoreWindow().Bounds();
-        double scale = Windows::Graphics::Display::DisplayInformation::GetForCurrentView().RawPixelsPerViewPixel();
-        return { (int)(b.Width * scale + 0.5), (int)(b.Height * scale + 0.5) };
-    }
-
-    // The game's settings (its registry key) for a player who brought none: the view's resolution,
-    // windowed (the view is the window), and the retail controller layout. Written once; edit or replace
-    // LocalState\settings.reg to change them.
+    // The game's settings (its registry key) for a player who brought none: windowed (the view is the
+    // window) and the retail controller layout. Written once; the game keeps its own changes in it,
+    // and the resolution is set on every start (SetGameResolution).
     void write_default_settings(std::wstring const& path)
     {
-        auto [w, h] = view_pixels();
-        if (w < 640 || h < 480)
-            w = 1920, h = 1080;
         FILE* f = _wfopen(path.c_str(), L"w");
         if (!f)
             return;
@@ -154,8 +143,6 @@ namespace
             "REGEDIT4\n\n"
             "[HKEY_LOCAL_MACHINE\\SOFTWARE\\PlayOnlineUS\\SquareEnix\\FinalFantasyXI]\n"
             "\"0000\"=dword:00000006\n"          // mip mapping
-            "\"0001\"=dword:%08x\n"              // window width
-            "\"0002\"=dword:%08x\n"              // window height
             "\"0003\"=dword:00001000\n"          // background resolution
             "\"0004\"=dword:00001000\n"
             "\"0007\"=dword:00000001\n"          // sound
@@ -166,11 +153,8 @@ namespace
             "\"0022\"=dword:00000001\n"          // hardware mouse
             "\"0034\"=dword:00000001\n"          // windowed
             "\"0035\"=dword:00000001\n"          // always on top
-            "\"0037\"=dword:%08x\n"              // interface (menu) resolution
-            "\"0038\"=dword:%08x\n"
             "\"padmode000\"=\"1,1,0,0,0,1\"\n"
-            "\"padsin000\"=\"8,9,13,12,10,0,1,3,2,15,-1,-1,14,-33,-33,32,32,-36,-36,35,35,6,7,5,4,11,-1\"\n",
-            w, h, w / 2, h / 2);
+            "\"padsin000\"=\"8,9,13,12,10,0,1,3,2,15,-1,-1,14,-33,-33,32,32,-36,-36,35,35,6,7,5,4,11,-1\"\n");
         fclose(f);
     }
 
@@ -264,6 +248,8 @@ UIElement GameHost::Start(LoginDetails const& d, SignInResult const& r, GameOpti
     std::wstring overlay = local + L"\\settings.reg"; // the game's settings: ours, until one is put there
     if (GetFileAttributesW(overlay.c_str()) == INVALID_FILE_ATTRIBUTES)
         write_default_settings(overlay);
+    Resolution res = o.resolution.first ? o.resolution : ScreenResolution();
+    SetGameResolution(overlay, res);
     args.insert(args.end(), { "--reg-overlay", utf8(overlay) });
     args.insert(args.end(), { "--fps-divisor", std::to_string(60 / o.fps) }); // the game's own frame pacing
     for (auto& a : HostArguments(d, r))
@@ -278,7 +264,8 @@ UIElement GameHost::Start(LoginDetails const& d, SignInResult const& r, GameOpti
     _wfreopen(log.c_str(), L"w", stderr);
     _wfreopen((local + L"\\host64.out.log").c_str(), L"w", stdout);
     setvbuf(stderr, nullptr, _IONBF, 0);
-    fprintf(stderr, "[app] starting the game: %s\n", o.game_dir.c_str());
+    fprintf(stderr, "[app] starting the game: %s at %dx%d (%s)\n", o.game_dir.c_str(), res.first, res.second,
+        o.resolution.first ? "chosen" : "the screen's");
 
     uwp_set_rumble(rumble);
     HookInput();

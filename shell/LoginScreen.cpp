@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "Display.h"
 #include "LoginScreen.h"
 #include "Settings.h"
 
@@ -109,6 +110,20 @@ UIElement LoginScreen::Build(SignedInHandler on_signed_in)
     m_fps60.Content(box_value(L"60 frames per second (the game shipped at 30)"));
     panel.Children().Append(m_fps60);
 
+    // the game's resolution: the screen's, found now, or a fixed one
+    m_resolution = ComboBox();
+    m_resolution.Header(box_value(L"Resolution"));
+    m_resolution.HorizontalAlignment(HorizontalAlignment::Stretch);
+    Resolution screen = ScreenResolution();
+    m_resolution.Items().Append(box_value(L"Match the screen (" + to_hstring(screen.first) + L" × " + to_hstring(screen.second) + L")"));
+    m_resolutions = { "" };
+    for (Resolution r : ResolutionChoices())
+    {
+        m_resolution.Items().Append(box_value(to_hstring(r.first) + L" × " + to_hstring(r.second)));
+        m_resolutions.push_back(ToText(r));
+    }
+    panel.Children().Append(m_resolution);
+
     StackPanel actions;
     actions.Orientation(Orientation::Horizontal);
     actions.Spacing(16);
@@ -140,6 +155,11 @@ UIElement LoginScreen::Build(SignedInHandler on_signed_in)
     m_password.Password(to_hstring(or_default(saved.details.password, pol ? LOCAL_POL_PASSWORD : LOCAL_PASSWORD)));
     m_remember.IsChecked(saved.remember_password);
     m_fps60.IsChecked(LoadFps() == 60);
+    {
+        std::string res = LoadResolution();
+        auto it = std::find(m_resolutions.begin(), m_resolutions.end(), res);
+        m_resolution.SelectedIndex(it == m_resolutions.end() ? 0 : (int32_t)(it - m_resolutions.begin()));
+    }
     m_game.Text(to_hstring(or_default(saved.game_dir, LOCAL_GAME_DIR)));
     m_loading = false;
 
@@ -207,7 +227,7 @@ void LoginScreen::SetBusy(bool busy)
 {
     m_busy.IsActive(busy);
     for (Control c : { Control(m_signin), Control(m_pol), Control(m_direct), Control(m_server), Control(m_id),
-                       Control(m_password), Control(m_otp), Control(m_game), Control(m_remember), Control(m_fps60) })
+                       Control(m_password), Control(m_otp), Control(m_game), Control(m_remember), Control(m_fps60), Control(m_resolution) })
         c.IsEnabled(!busy);
 }
 
@@ -242,6 +262,10 @@ fire_and_forget LoginScreen::OnSignIn()
     bool remember = m_remember.IsChecked() && m_remember.IsChecked().Value();
     SaveLogin(d, remember, game);
     SaveFps(m_fps60.IsChecked() && m_fps60.IsChecked().Value() ? 60 : 30);
+    {
+        int32_t i = m_resolution.SelectedIndex();
+        SaveResolution(i > 0 && i < (int32_t)m_resolutions.size() ? m_resolutions[(size_t)i] : "");
+    }
     SetBusy(true);
     ShowStatus(L"Signing in...", false);
 

@@ -2,6 +2,8 @@
 
 #include "GameCopy.h"
 
+#include <fstream>
+
 using namespace winrt;
 using namespace Windows::Foundation;
 using namespace Windows::Storage;
@@ -261,6 +263,21 @@ std::wstring PackagedGameFolder()
     {
     }
     return L"";
+}
+
+std::wstring GameTxtFolder()
+{
+    std::ifstream f(local_folder() + L"\\game.txt");
+    std::string line;
+    if (!f || !std::getline(f, line))
+        return L"";
+    if (line.size() >= 3 && (unsigned char)line[0] == 0xEF && (unsigned char)line[1] == 0xBB && (unsigned char)line[2] == 0xBF)
+        line.erase(0, 3); // a UTF-8 byte order mark
+    while (!line.empty() && (line.back() == '\r' || line.back() == ' ' || line.back() == '\\' || line.back() == '/'))
+        line.pop_back();
+    while (!line.empty() && line.front() == ' ')
+        line.erase(0, 1);
+    return to_hstring(line).c_str();
 }
 
 bool HaveCopiedGame()

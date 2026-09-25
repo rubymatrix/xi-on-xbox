@@ -82,6 +82,10 @@ void SaveFps(int fps)
     ApplicationData::Current().LocalSettings().Values().Insert(L"fps", box_value(int32_t(fps == 60 ? 60 : 30)));
 }
 
+bool LoadProfile() { return unbox_value_or<bool>(ApplicationData::Current().LocalSettings().Values().TryLookup(L"profile"), false); }
+
+void SaveProfile(bool on) { ApplicationData::Current().LocalSettings().Values().Insert(L"profile", box_value(on)); }
+
 std::string LoadResolution() { return text(ApplicationData::Current().LocalSettings().Values(), L"resolution"); }
 
 void SaveResolution(std::string const& res)

@@ -12,7 +12,7 @@
 struct GameOptions
 {
     std::string game_dir; // the FINAL FANTASY XI folder (PlayOnlineViewer next to it)
-    bool profile = true;  // FFXI_PROFILE=1: the frame profile every 2 s, for tools/frame_budget.py
+    bool profile = false; // FFXI_PROFILE=1 and FFXI_SAMPLE: the frame profile every 2 s and the game thread's samples
     int fps = 30;         // 30 (as the game shipped) or 60: the login screen's choice
     Resolution resolution{ 0, 0 }; // the game's; {0, 0}: the screen's (ScreenResolution)
 };

@@ -13,6 +13,10 @@ bool HaveCopiedGame();
 // The game beside the app, when the app runs from a folder that holds it (SquareEnix\FINAL FANTASY XI
 // in its install location: a loose layout on a network share, say); "" when it is not there.
 std::wstring PackagedGameFolder();
+// The game folder named in LocalState\game.txt (its first line: a network share's, say
+// \\192.168.0.78\Xbox\SquareEnix\FINAL FANTASY XI, with PlayOnlineViewer beside it); "" without one.
+// It overrides every other choice of folder.
+std::wstring GameTxtFolder();
 
 class GameCopy
 {

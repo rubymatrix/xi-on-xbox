@@ -18,7 +18,7 @@ namespace Xin = Windows::UI::Xaml::Input;
 #include "LocalDefaults.h"
 #endif
 #ifndef LOCAL_SERVER
-#define LOCAL_SERVER ""
+#define LOCAL_SERVER "game.phoenix-xi.com" // the default server (direct, LandSandBoat)
 #endif
 #ifndef LOCAL_POL_ID
 #define LOCAL_POL_ID ""
@@ -85,7 +85,7 @@ UIElement LoginScreen::Build(SignedInHandler on_signed_in)
     modes.Children().Append(m_direct);
     panel.Children().Append(modes);
 
-    m_server = text_box(L"Server", L"10.0.1.10");
+    m_server = text_box(L"Server", L"game.phoenix-xi.com");
     m_server.InputScope([] {
         Xin::InputScope s;
         Xin::InputScopeName n;

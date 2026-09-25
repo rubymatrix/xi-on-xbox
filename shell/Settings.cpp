@@ -38,7 +38,8 @@ SavedLogin LoadLogin()
 {
     SavedLogin s;
     auto values = ApplicationData::Current().LocalSettings().Values();
-    s.details.mode = unbox_value_or<int32_t>(values.TryLookup(L"mode"), 0) ? LoginMode::Direct : LoginMode::PlayOnline;
+    // unsaved: direct (LandSandBoat), the default server's way in
+    s.details.mode = unbox_value_or<int32_t>(values.TryLookup(L"mode"), 1) ? LoginMode::Direct : LoginMode::PlayOnline;
     s.details.server = text(values, L"server");
     s.details.id = text(values, s.details.mode == LoginMode::PlayOnline ? L"pol_id" : L"account");
     s.remember_password = unbox_value_or<bool>(values.TryLookup(L"remember"), false);

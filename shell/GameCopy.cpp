@@ -253,7 +253,10 @@ UIElement GameCopy::Build(std::function<void(std::wstring const&)> on_done)
     row.Orientation(Orientation::Horizontal);
     row.Spacing(12);
     m_address = TextBox();
-    m_address.PlaceholderText(L"192.168.1.20:8765");
+    m_address.PlaceholderText(L"192.168.0.78:8765");
+    // the address used last, else the usual one
+    m_address.Text(unbox_value_or<hstring>(ApplicationData::Current().LocalSettings().Values().TryLookup(L"copy_from"),
+        L"192.168.0.78:8765"));
     m_address.Width(260);
     m_address.IsSpellCheckEnabled(false);
     m_copy = Button();
@@ -298,6 +301,7 @@ fire_and_forget GameCopy::Start()
     if (g_running.exchange(true))
         co_return;
     std::wstring addr = m_address.Text().c_str();
+    ApplicationData::Current().LocalSettings().Values().Insert(L"copy_from", box_value(m_address.Text()));
     while (!addr.empty() && (addr.back() == L' ' || addr.back() == L'/'))
         addr.pop_back();
     if (addr.empty())

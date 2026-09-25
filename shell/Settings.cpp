@@ -71,6 +71,16 @@ void SaveLogin(LoginDetails const& d, bool remember_password, std::string const&
         PasswordVault().Add(PasswordCredential(vault_resource(d.mode), to_hstring(d.id), to_hstring(d.password)));
 }
 
+int LoadFps()
+{
+    return unbox_value_or<int32_t>(ApplicationData::Current().LocalSettings().Values().TryLookup(L"fps"), 30) == 60 ? 60 : 30;
+}
+
+void SaveFps(int fps)
+{
+    ApplicationData::Current().LocalSettings().Values().Insert(L"fps", box_value(int32_t(fps == 60 ? 60 : 30)));
+}
+
 // the ID field shows the one saved for the mode switched to
 std::string SavedId(LoginMode m)
 {

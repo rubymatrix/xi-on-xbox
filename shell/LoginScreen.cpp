@@ -105,6 +105,9 @@ UIElement LoginScreen::Build(SignedInHandler on_signed_in)
     m_remember = CheckBox();
     m_remember.Content(box_value(L"Remember the password on this device"));
     panel.Children().Append(m_remember);
+    m_fps60 = CheckBox();
+    m_fps60.Content(box_value(L"60 frames per second (the game shipped at 30)"));
+    panel.Children().Append(m_fps60);
 
     StackPanel actions;
     actions.Orientation(Orientation::Horizontal);
@@ -136,6 +139,7 @@ UIElement LoginScreen::Build(SignedInHandler on_signed_in)
     m_id.Text(to_hstring(or_default(saved.details.id, pol ? LOCAL_POL_ID : LOCAL_ACCOUNT)));
     m_password.Password(to_hstring(or_default(saved.details.password, pol ? LOCAL_POL_PASSWORD : LOCAL_PASSWORD)));
     m_remember.IsChecked(saved.remember_password);
+    m_fps60.IsChecked(LoadFps() == 60);
     m_game.Text(to_hstring(or_default(saved.game_dir, LOCAL_GAME_DIR)));
     m_loading = false;
 
@@ -203,7 +207,7 @@ void LoginScreen::SetBusy(bool busy)
 {
     m_busy.IsActive(busy);
     for (Control c : { Control(m_signin), Control(m_pol), Control(m_direct), Control(m_server), Control(m_id),
-                       Control(m_password), Control(m_otp), Control(m_game), Control(m_remember) })
+                       Control(m_password), Control(m_otp), Control(m_game), Control(m_remember), Control(m_fps60) })
         c.IsEnabled(!busy);
 }
 
@@ -237,6 +241,7 @@ fire_and_forget LoginScreen::OnSignIn()
     }
     bool remember = m_remember.IsChecked() && m_remember.IsChecked().Value();
     SaveLogin(d, remember, game);
+    SaveFps(m_fps60.IsChecked() && m_fps60.IsChecked().Value() ? 60 : 30);
     SetBusy(true);
     ShowStatus(L"Signing in...", false);
 

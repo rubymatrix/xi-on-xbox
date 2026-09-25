@@ -28,7 +28,7 @@ private:
     winrt::Windows::UI::Xaml::Controls::RadioButton m_pol{ nullptr }, m_direct{ nullptr };
     winrt::Windows::UI::Xaml::Controls::TextBox m_server{ nullptr }, m_id{ nullptr }, m_otp{ nullptr }, m_game{ nullptr };
     winrt::Windows::UI::Xaml::Controls::PasswordBox m_password{ nullptr };
-    winrt::Windows::UI::Xaml::Controls::CheckBox m_remember{ nullptr };
+    winrt::Windows::UI::Xaml::Controls::CheckBox m_remember{ nullptr }, m_fps60{ nullptr };
     winrt::Windows::UI::Xaml::Controls::Button m_signin{ nullptr };
     winrt::Windows::UI::Xaml::Controls::ProgressRing m_busy{ nullptr };
     winrt::Windows::UI::Xaml::Controls::TextBlock m_status{ nullptr };

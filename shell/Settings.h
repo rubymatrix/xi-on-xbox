@@ -13,5 +13,8 @@ struct SavedLogin
 
 SavedLogin LoadLogin();
 void SaveLogin(LoginDetails const& d, bool remember_password, std::string const& game_dir);
+// The frame rate to run the game at: 30 (as it shipped, the default) or 60.
+int LoadFps();
+void SaveFps(int fps);
 // The ID last used with a mode (the PlayOnline ID and the direct account are kept apart).
 std::string SavedId(LoginMode m);

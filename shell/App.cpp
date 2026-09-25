@@ -9,15 +9,52 @@ using namespace winrt;
 using namespace Windows::ApplicationModel::Activation;
 using namespace Windows::UI::Xaml;
 
+namespace
+{
+    // What went wrong, where it can be read afterwards: LocalState\app.log (on the console, through
+    // Device Portal's file explorer).
+    void log(std::wstring const& text)
+    {
+        try
+        {
+            std::wstring path = std::wstring(Windows::Storage::ApplicationData::Current().LocalFolder().Path()) + L"\\app.log";
+            if (FILE* f = _wfopen(path.c_str(), L"a, ccs=UTF-8"))
+            {
+                fwprintf(f, L"%s\n", text.c_str());
+                fclose(f);
+            }
+        }
+        catch (...)
+        {
+        }
+        OutputDebugStringW((text + L"\n").c_str());
+    }
+}
+
 struct App : ApplicationT<App>
 {
     LoginScreen m_login;
 
+    App()
+    {
+        UnhandledException([](auto&&, UnhandledExceptionEventArgs const& e) {
+            log(L"unhandled: " + std::wstring(e.Message().c_str()) + L" (" + std::to_wstring(e.Exception()) + L")");
+        });
+    }
+
     void OnLaunched(LaunchActivatedEventArgs const&)
     {
         Window window = Window::Current();
-        if (!window.Content())
-            window.Content(m_login.Build([this](LoginDetails const& d, SignInResult const& r) { OnSignedIn(d, r); }));
+        try
+        {
+            if (!window.Content())
+                window.Content(m_login.Build([this](LoginDetails const& d, SignInResult const& r) { OnSignedIn(d, r); }));
+        }
+        catch (hresult_error const& e)
+        {
+            log(L"building the login screen: " + std::wstring(e.message().c_str()) + L" (" + std::to_wstring(e.code()) + L")");
+            throw;
+        }
         window.Activate();
     }
 
@@ -33,7 +70,15 @@ struct App : ApplicationT<App>
 
 int __stdcall wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
 {
-    init_apartment(apartment_type::single_threaded);
-    Application::Start([](auto&&) { make<App>(); });
+    // no init_apartment: Application::Start sets the thread up as the UI thread itself
+    try
+    {
+        Application::Start([](auto&&) { make<App>(); });
+    }
+    catch (hresult_error const& e)
+    {
+        log(L"Application::Start: " + std::wstring(e.message().c_str()) + L" (" + std::to_wstring(e.code()) + L")");
+        return 1;
+    }
     return 0;
 }

@@ -113,7 +113,10 @@ namespace
         {
             FileHandle f{ CreateFile2(part.c_str(), GENERIC_WRITE, 0, have ? OPEN_EXISTING : CREATE_ALWAYS, nullptr) };
             if (f.h == INVALID_HANDLE_VALUE)
-                throw hresult_error(HRESULT_FROM_WIN32(GetLastError()), L"cannot write " + e.path);
+            {
+                DWORD err = GetLastError();
+                throw hresult_error(HRESULT_FROM_WIN32(err), L"cannot write " + e.path + L" (Windows error " + to_hstring((uint32_t)err) + L")");
+            }
             LARGE_INTEGER end{};
             end.QuadPart = (LONGLONG)have;
             SetFilePointerEx(f.h, end, nullptr, FILE_BEGIN);
@@ -128,8 +131,8 @@ namespace
                 DWORD wrote = 0;
                 if (!WriteFile(f.h, r.data(), r.Length(), &wrote, nullptr) || wrote != r.Length())
                 {
-                    ok = false;
-                    break;
+                    DWORD err = GetLastError();
+                    throw hresult_error(HRESULT_FROM_WIN32(err), L"writing " + e.path + L" failed (Windows error " + to_hstring((uint32_t)err) + L")");
                 }
                 got += wrote;
                 g_bytes_done += wrote, counted += wrote;
@@ -282,6 +285,16 @@ UIElement GameCopy::Build(std::function<void(std::wstring const&)> on_done)
     return panel;
 }
 
+namespace
+{
+    // the latest failure, shown as it happens: a copy that keeps failing never reaches its summary
+    hstring last_error()
+    {
+        std::lock_guard<std::mutex> hold(g_error_lock);
+        return g_error.empty() ? hstring() : hstring(L"\nLast error: " + g_error);
+    }
+}
+
 void GameCopy::ShowProgress()
 {
     uint64_t done = g_bytes_done, total = g_bytes_total;
@@ -293,7 +306,7 @@ void GameCopy::ShowProgress()
     swprintf(rate, 32, L"%.0f MB/s", secs > 0 ? done / 1e6 / secs : 0.0);
     m_status.Text(L"Copying: " + hstring(gb(done)) + L" of " + hstring(gb(total)) + L" GB, " +
                   to_hstring(g_files_done.load()) + L" of " + to_hstring(g_files_total.load()) + L" files, " + rate +
-                  (g_retries ? L", " + to_hstring(g_retries.load()) + L" retried" : L""));
+                  (g_retries ? L", " + to_hstring(g_retries.load()) + L" retried" : L"") + last_error());
 }
 
 fire_and_forget GameCopy::Start()

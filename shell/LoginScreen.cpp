@@ -164,9 +164,11 @@ UIElement LoginScreen::Build(SignedInHandler on_signed_in)
         auto it = std::find(m_resolutions.begin(), m_resolutions.end(), res);
         m_resolution.SelectedIndex(it == m_resolutions.end() ? 0 : (int32_t)(it - m_resolutions.begin()));
     }
-    // the game folder: the one used last, else a copy made here, else this machine's default
+    // the game folder: the one beside the app if it runs from one that holds it, else the one used
+    // last, else a copy made here, else this machine's default
+    std::string beside = to_string(PackagedGameFolder());
     std::string copied = HaveCopiedGame() ? to_string(CopiedGameFolder()) : std::string();
-    m_game.Text(to_hstring(or_default(saved.game_dir, copied.empty() ? LOCAL_GAME_DIR : copied.c_str())));
+    m_game.Text(to_hstring(!beside.empty() ? beside : or_default(saved.game_dir, copied.empty() ? LOCAL_GAME_DIR : copied.c_str())));
     m_loading = false;
 
     auto mode_changed = [this](auto&&, auto&&) {

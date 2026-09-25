@@ -10,6 +10,9 @@
 std::wstring CopiedGameFolder();
 // Whether a finished copy is there (its FFXiMain.dll).
 bool HaveCopiedGame();
+// The game beside the app, when the app runs from a folder that holds it (SquareEnix\FINAL FANTASY XI
+// in its install location: a loose layout on a network share, say); "" when it is not there.
+std::wstring PackagedGameFolder();
 
 class GameCopy
 {

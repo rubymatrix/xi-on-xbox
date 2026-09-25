@@ -248,6 +248,21 @@ namespace
 
 std::wstring CopiedGameFolder() { return local_folder() + L"\\SquareEnix\\FINAL FANTASY XI"; }
 
+std::wstring PackagedGameFolder()
+{
+    try
+    {
+        std::wstring root = Windows::ApplicationModel::Package::Current().InstalledLocation().Path().c_str();
+        std::wstring game = root + L"\\SquareEnix\\FINAL FANTASY XI";
+        if (GetFileAttributesW((game + L"\\FFXiMain.dll").c_str()) != INVALID_FILE_ATTRIBUTES)
+            return game;
+    }
+    catch (hresult_error const&)
+    {
+    }
+    return L"";
+}
+
 bool HaveCopiedGame()
 {
     return GetFileAttributesW((CopiedGameFolder() + L"\\FFXiMain.dll").c_str()) != INVALID_FILE_ATTRIBUTES &&

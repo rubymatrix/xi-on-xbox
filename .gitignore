@@ -3,3 +3,4 @@ __pycache__/
 build/
 *.user
 .vs/
+shell/LocalDefaults.h

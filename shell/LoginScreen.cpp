@@ -11,8 +11,34 @@ using namespace Windows::UI::Xaml::Controls;
 using namespace Windows::UI::Xaml::Media;
 namespace Xin = Windows::UI::Xaml::Input;
 
+// This machine's test login, to pre-fill the screen: shell\LocalDefaults.h, which git ignores (it
+// holds a password). Any of these may be left out.
+#if __has_include("LocalDefaults.h")
+#include "LocalDefaults.h"
+#endif
+#ifndef LOCAL_SERVER
+#define LOCAL_SERVER ""
+#endif
+#ifndef LOCAL_POL_ID
+#define LOCAL_POL_ID ""
+#endif
+#ifndef LOCAL_POL_PASSWORD
+#define LOCAL_POL_PASSWORD ""
+#endif
+#ifndef LOCAL_ACCOUNT
+#define LOCAL_ACCOUNT ""
+#endif
+#ifndef LOCAL_PASSWORD
+#define LOCAL_PASSWORD ""
+#endif
+#ifndef LOCAL_GAME_DIR
+#define LOCAL_GAME_DIR ""
+#endif
+
 namespace
 {
+    std::string or_default(std::string const& saved, char const* fallback) { return saved.empty() ? fallback : saved; }
+
     TextBox text_box(wchar_t const* header, wchar_t const* placeholder)
     {
         TextBox t;
@@ -100,24 +126,26 @@ UIElement LoginScreen::Build(SignedInHandler on_signed_in)
     m_status.IsTextSelectionEnabled(true);
     panel.Children().Append(m_status);
 
-    // what was used last time
+    // what was used last time; where nothing was, this machine's defaults (LocalDefaults.h)
     m_loading = true;
     SavedLogin saved = LoadLogin();
     (saved.details.mode == LoginMode::Direct ? m_direct : m_pol).IsChecked(true);
     ShowMode(saved.details.mode);
-    m_server.Text(to_hstring(saved.details.server));
-    m_id.Text(to_hstring(saved.details.id));
-    m_password.Password(to_hstring(saved.details.password));
+    bool pol = saved.details.mode == LoginMode::PlayOnline;
+    m_server.Text(to_hstring(or_default(saved.details.server, LOCAL_SERVER)));
+    m_id.Text(to_hstring(or_default(saved.details.id, pol ? LOCAL_POL_ID : LOCAL_ACCOUNT)));
+    m_password.Password(to_hstring(or_default(saved.details.password, pol ? LOCAL_POL_PASSWORD : LOCAL_PASSWORD)));
     m_remember.IsChecked(saved.remember_password);
-    m_game.Text(to_hstring(saved.game_dir));
+    m_game.Text(to_hstring(or_default(saved.game_dir, LOCAL_GAME_DIR)));
     m_loading = false;
 
     auto mode_changed = [this](auto&&, auto&&) {
         if (m_loading)
             return;
+        bool pol = Mode() == LoginMode::PlayOnline;
         ShowMode(Mode());
-        m_id.Text(to_hstring(SavedId(Mode())));
-        m_password.Password(L"");
+        m_id.Text(to_hstring(or_default(SavedId(Mode()), pol ? LOCAL_POL_ID : LOCAL_ACCOUNT)));
+        m_password.Password(to_hstring(std::string(pol ? LOCAL_POL_PASSWORD : LOCAL_PASSWORD)));
     };
     m_pol.Checked(mode_changed);
     m_direct.Checked(mode_changed);

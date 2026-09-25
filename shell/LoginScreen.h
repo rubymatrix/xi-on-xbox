@@ -12,7 +12,7 @@ class LoginScreen
 {
 public:
     // Called on the UI thread once signed in, with the host's sign-in arguments.
-    using SignedInHandler = std::function<void(LoginDetails const&, SignInResult const&)>;
+    using SignedInHandler = std::function<void(LoginDetails const&, SignInResult const&, std::string const& game_dir)>;
 
     winrt::Windows::UI::Xaml::UIElement Build(SignedInHandler on_signed_in);
     void ShowStatus(std::wstring const& text, bool error);
@@ -26,7 +26,7 @@ private:
 
     SignedInHandler m_on_signed_in;
     winrt::Windows::UI::Xaml::Controls::RadioButton m_pol{ nullptr }, m_direct{ nullptr };
-    winrt::Windows::UI::Xaml::Controls::TextBox m_server{ nullptr }, m_id{ nullptr }, m_otp{ nullptr };
+    winrt::Windows::UI::Xaml::Controls::TextBox m_server{ nullptr }, m_id{ nullptr }, m_otp{ nullptr }, m_game{ nullptr };
     winrt::Windows::UI::Xaml::Controls::PasswordBox m_password{ nullptr };
     winrt::Windows::UI::Xaml::Controls::CheckBox m_remember{ nullptr };
     winrt::Windows::UI::Xaml::Controls::Button m_signin{ nullptr };

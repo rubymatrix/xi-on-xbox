@@ -1,8 +1,8 @@
 // XI on Xbox: the UWP app. It signs in (LoginScreen), then runs FFXIRecompile's game host in this
-// process. The host is not linked in yet (docs/handoff-gate1.md steps 2-4); for now a successful
-// sign-in reports what the host would be started with.
+// process (GameHost), from FFXIRecompile's build/uwp/ffxi_uwp.lib.
 #include "pch.h"
 
+#include "GameHost.h"
 #include "LoginScreen.h"
 
 using namespace winrt;
@@ -48,7 +48,9 @@ struct App : ApplicationT<App>
         try
         {
             if (!window.Content())
-                window.Content(m_login.Build([this](LoginDetails const& d, SignInResult const& r) { OnSignedIn(d, r); }));
+                window.Content(m_login.Build([this](LoginDetails const& d, SignInResult const& r, std::string const& game) {
+                    OnSignedIn(d, r, game);
+                }));
         }
         catch (hresult_error const& e)
         {
@@ -58,14 +60,18 @@ struct App : ApplicationT<App>
         window.Activate();
     }
 
-    void OnSignedIn(LoginDetails const& d, SignInResult const& r)
+    // Signed in: the game takes over the window. When it ends, the app closes, as the game would.
+    void OnSignedIn(LoginDetails const& d, SignInResult const& r, std::string const& game)
     {
-        std::wstring text = to_hstring(r.message).c_str();
-        text += L"\n\nThe game host is not part of the app yet. It would start with:\n ";
-        for (std::string const& a : HostArguments(d, r))
-            text += L" " + std::wstring(to_hstring(a == d.password ? std::string("********") : a).c_str());
-        m_login.ShowStatus(text, false);
+        GameOptions o;
+        o.game_dir = game;
+        Window::Current().Content(m_game.Start(d, r, o, [](int code) {
+            log(L"the game ended: " + std::to_wstring(code));
+            SignOut();
+        }));
     }
+
+    GameHost m_game;
 };
 
 int __stdcall wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)

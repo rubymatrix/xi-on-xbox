@@ -42,6 +42,7 @@ SavedLogin LoadLogin()
     s.details.server = text(values, L"server");
     s.details.id = text(values, s.details.mode == LoginMode::PlayOnline ? L"pol_id" : L"account");
     s.remember_password = unbox_value_or<bool>(values.TryLookup(L"remember"), false);
+    s.game_dir = text(values, L"game_dir");
     if (s.remember_password && !s.details.id.empty())
     {
         try
@@ -57,9 +58,10 @@ SavedLogin LoadLogin()
     return s;
 }
 
-void SaveLogin(LoginDetails const& d, bool remember_password)
+void SaveLogin(LoginDetails const& d, bool remember_password, std::string const& game_dir)
 {
     auto values = ApplicationData::Current().LocalSettings().Values();
+    values.Insert(L"game_dir", box_value(to_hstring(game_dir)));
     values.Insert(L"mode", box_value(int32_t(d.mode == LoginMode::Direct)));
     values.Insert(L"server", box_value(to_hstring(d.server)));
     values.Insert(d.mode == LoginMode::PlayOnline ? L"pol_id" : L"account", box_value(to_hstring(d.id)));

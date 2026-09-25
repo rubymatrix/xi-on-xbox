@@ -74,6 +74,8 @@ UIElement LoginScreen::Build(SignedInHandler on_signed_in)
     panel.Children().Append(m_password);
     m_otp = text_box(L"One-time code (only if the account has two-factor sign-in)", L"");
     panel.Children().Append(m_otp);
+    m_game = text_box(L"FINAL FANTASY XI folder", L"C:\\...\\SquareEnix\\FINAL FANTASY XI");
+    panel.Children().Append(m_game);
     m_remember = CheckBox();
     m_remember.Content(box_value(L"Remember the password on this device"));
     panel.Children().Append(m_remember);
@@ -107,6 +109,7 @@ UIElement LoginScreen::Build(SignedInHandler on_signed_in)
     m_id.Text(to_hstring(saved.details.id));
     m_password.Password(to_hstring(saved.details.password));
     m_remember.IsChecked(saved.remember_password);
+    m_game.Text(to_hstring(saved.game_dir));
     m_loading = false;
 
     auto mode_changed = [this](auto&&, auto&&) {
@@ -172,7 +175,7 @@ void LoginScreen::SetBusy(bool busy)
 {
     m_busy.IsActive(busy);
     for (Control c : { Control(m_signin), Control(m_pol), Control(m_direct), Control(m_server), Control(m_id),
-                       Control(m_password), Control(m_otp), Control(m_remember) })
+                       Control(m_password), Control(m_otp), Control(m_game), Control(m_remember) })
         c.IsEnabled(!busy);
 }
 
@@ -192,8 +195,20 @@ fire_and_forget LoginScreen::OnSignIn()
                    true);
         co_return;
     }
+    std::string game = to_string(m_game.Text());
+    while (!game.empty() && (game.back() == '\\' || game.back() == '/' || game.back() == ' '))
+        game.pop_back();
+    DWORD attrs = GetFileAttributesW(to_hstring(game).c_str());
+    if (game.empty() || attrs == INVALID_FILE_ATTRIBUTES || !(attrs & FILE_ATTRIBUTE_DIRECTORY))
+    {
+        ShowStatus(game.empty() ? L"Fill in the FINAL FANTASY XI folder."
+                                : L"The app cannot open that FINAL FANTASY XI folder (error " + std::to_wstring(GetLastError()) +
+                                      L"). It has to exist, and be readable by apps.",
+                   true);
+        co_return;
+    }
     bool remember = m_remember.IsChecked() && m_remember.IsChecked().Value();
-    SaveLogin(d, remember);
+    SaveLogin(d, remember, game);
     SetBusy(true);
     ShowStatus(L"Signing in...", false);
 
@@ -205,5 +220,5 @@ fire_and_forget LoginScreen::OnSignIn()
     SetBusy(false);
     ShowStatus(to_hstring(r.message).c_str(), !r.ok);
     if (r.ok && m_on_signed_in)
-        m_on_signed_in(d, r);
+        m_on_signed_in(d, r, game);
 }

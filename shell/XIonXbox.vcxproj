@@ -24,6 +24,8 @@
     <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
     <WindowsTargetPlatformMinVersion>10.0.19041.0</WindowsTargetPlatformMinVersion>
     <SignetDir Condition="'$(SignetDir)' == ''">$(MSBuildThisFileDirectory)..\..\FFXI-Signet\</SignetDir>
+    <!-- the game: FFXIRecompile's `python tools\build.py uwp-lib` -->
+    <FFXIRecompileDir Condition="'$(FFXIRecompileDir)' == ''">$(MSBuildThisFileDirectory)..\..\FFXIRecompile\</FFXIRecompileDir>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
@@ -51,18 +53,21 @@
       <CompileAsWinRT>false</CompileAsWinRT>
       <WarningLevel>Level3</WarningLevel>
       <AdditionalOptions>/bigobj /utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\cppwinrt;$(SignetDir)client\pol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\cppwinrt;$(SignetDir)client\pol;$(FFXIRecompileDir)runtime\portable;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Optimization Condition="'$(Configuration)' == 'Release'">MaxSpeed</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
-      <AdditionalDependencies>WindowsApp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <!-- WindowsApp.lib is the only Windows import library: an unresolved import is a Win32 call UWP
+           does not allow -->
+      <AdditionalDependencies>$(FFXIRecompileDir)build\uwp\ffxi_uwp.lib;WindowsApp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="GameHost.h" />
     <ClInclude Include="LoginScreen.h" />
     <ClInclude Include="Session.h" />
     <ClInclude Include="Settings.h" />
@@ -72,6 +77,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="App.cpp" />
+    <ClCompile Include="GameHost.cpp" />
     <ClCompile Include="LoginScreen.cpp" />
     <ClCompile Include="Session.cpp" />
     <ClCompile Include="Settings.cpp" />

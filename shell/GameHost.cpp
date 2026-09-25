@@ -265,6 +265,7 @@ UIElement GameHost::Start(LoginDetails const& d, SignInResult const& r, GameOpti
     if (GetFileAttributesW(overlay.c_str()) == INVALID_FILE_ATTRIBUTES)
         write_default_settings(overlay);
     args.insert(args.end(), { "--reg-overlay", utf8(overlay) });
+    args.insert(args.end(), { "--fps-divisor", std::to_string(60 / o.fps) }); // the game's own frame pacing
     for (auto& a : HostArguments(d, r))
         args.push_back(a);
 

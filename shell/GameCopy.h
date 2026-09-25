@@ -27,4 +27,5 @@ private:
     winrt::Windows::UI::Xaml::Controls::ProgressBar m_bar{ nullptr };
     winrt::Windows::UI::Xaml::Controls::TextBlock m_status{ nullptr };
     winrt::Windows::UI::Xaml::DispatcherTimer m_timer{ nullptr };
+    std::wstring m_space; // free storage when the copy began
 };

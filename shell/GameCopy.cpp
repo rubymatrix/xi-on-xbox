@@ -31,10 +31,28 @@ namespace
 
     std::wstring local_folder() { return std::wstring(ApplicationData::Current().LocalFolder().Path().c_str()); }
 
+    // A folder that cannot be made is reported with its own error: ignored, it surfaced as the file's
+    // "path not found" (3), hiding the real cause.
     void make_dirs(std::wstring const& file)
     {
         for (size_t i = local_folder().size() + 1; (i = file.find(L'\\', i)) != std::wstring::npos; ++i)
-            CreateDirectoryW(file.substr(0, i).c_str(), nullptr);
+            if (!CreateDirectoryW(file.substr(0, i).c_str(), nullptr) && GetLastError() != ERROR_ALREADY_EXISTS)
+            {
+                DWORD err = GetLastError();
+                throw hresult_error(HRESULT_FROM_WIN32(err), L"cannot make the folder " + hstring(file.substr(0, i)) +
+                                                                 L" (Windows error " + to_hstring((uint32_t)err) + L")");
+            }
+    }
+
+    // What the app's storage has left, as Windows reports it for LocalState; "" if it will not say.
+    std::wstring free_space()
+    {
+        ULARGE_INTEGER avail{}, total{};
+        if (!GetDiskFreeSpaceExW(local_folder().c_str(), &avail, &total, nullptr))
+            return L"";
+        wchar_t s[96];
+        swprintf(s, 96, L"%.1f GB free of %.1f GB", avail.QuadPart / 1e9, total.QuadPart / 1e9);
+        return s;
     }
 
     uint64_t file_size(std::wstring const& path)
@@ -306,7 +324,8 @@ void GameCopy::ShowProgress()
     swprintf(rate, 32, L"%.0f MB/s", secs > 0 ? done / 1e6 / secs : 0.0);
     m_status.Text(L"Copying: " + hstring(gb(done)) + L" of " + hstring(gb(total)) + L" GB, " +
                   to_hstring(g_files_done.load()) + L" of " + to_hstring(g_files_total.load()) + L" files, " + rate +
-                  (g_retries ? L", " + to_hstring(g_retries.load()) + L" retried" : L"") + last_error());
+                  (g_retries ? L", " + to_hstring(g_retries.load()) + L" retried" : L"") +
+                  (m_space.empty() ? hstring() : hstring(L"\nStorage at the start: " + m_space + L"; now: " + free_space())) + last_error());
 }
 
 fire_and_forget GameCopy::Start()
@@ -333,6 +352,7 @@ fire_and_forget GameCopy::Start()
     m_address.IsEnabled(false);
     m_bar.Visibility(Visibility::Visible);
     m_status.Text(L"Asking " + hstring(addr) + L" for its file list...");
+    m_space = free_space();
     m_timer.Start();
 
     CoreDispatcher ui = Window::Current().Dispatcher();

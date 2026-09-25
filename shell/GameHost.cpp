@@ -2,6 +2,8 @@
 
 #include "GameHost.h"
 
+#include "Audio.h"
+
 #include "uwp_bridge.h"
 
 extern "C" int host_main(int argc, char** argv); // host/host64.c, built with /Dmain=host_main
@@ -310,6 +312,7 @@ UIElement GameHost::Start(LoginDetails const& d, SignInResult const& r, GameOpti
         fprintf(stderr, "[app] USER: %u file(s) copied from the install's USER folder (settings, key bindings, macros)\n", seeded);
 
     uwp_set_rumble(rumble);
+    StartAudio(); // before the game opens its DirectSound device
     HookInput();
     // the controller's state before the game looks for pads, which it does once, as it starts
     poll_gamepad();

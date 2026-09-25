@@ -65,11 +65,12 @@
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
       <!-- WindowsApp.lib is the only Windows import library: an unresolved import is a Win32 call UWP
            does not allow -->
-      <AdditionalDependencies>$(FFXIRecompileDir)build\uwp\ffxi_uwp.lib;WindowsApp.lib;d3d12.lib;dxgi.lib;d3dcompiler.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(FFXIRecompileDir)build\uwp\ffxi_uwp.lib;WindowsApp.lib;xaudio2.lib;d3d12.lib;dxgi.lib;d3dcompiler.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Audio.h" />
     <ClInclude Include="Display.h" />
     <ClInclude Include="GameHost.h" />
     <ClInclude Include="LoginScreen.h" />
@@ -81,6 +82,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="App.cpp" />
+    <ClCompile Include="Audio.cpp" />
     <ClCompile Include="Display.cpp" />
     <ClCompile Include="GameHost.cpp" />
     <ClCompile Include="LoginScreen.cpp" />

@@ -31,10 +31,22 @@ The recompiler, runtime, and platform layer stay in FFXIRecompile and are built 
 | D3D11 back end | `gfx_d3d11.c` behind FFXIRecompile's `gfx.h`; D3D8 fixed-function and vs/ps 1.x generated as HLSL; command encoding on a render thread. Also gives Windows x64 graphics (it has only `gfx_null.c` today). | 1.5–3 wk |
 | UWP shell | CoreWindow, Windows.Gaming.Input, XAudio2 in place of SDL3 (SDL3 has no UWP support); package declared as a **Game** (about 5 GB RAM and the full GPU, versus about 1 GB for an App) | 1–2 wk |
 | UWP API changes in FFXIRecompile's `plat_win.c` / `vfs.c` | `VirtualAllocFromApp`, `CreateFile2`, the game folder in LocalState, the `internetClient` capability | days |
-| Game data | 14 GB install uploaded to LocalState through Device Portal (or a USB drive) | days |
+| Game data | 14 GB install uploaded beside the app, registered as a loose app on the console's development drive (LocalState's drive is too small): **[docs/xbox-install.md](docs/xbox-install.md)** | done |
 | Login | LandSandBoat (`lsb_login.c`, already inside `host64`) | days |
 
 ## Tools
+
+Installing on the console and getting the game onto it, from any computer on its network: set it up
+once, then each build is a small update that leaves the game in place. Why it's done this way, and
+every quirk found on the way: [docs/xbox-install.md](docs/xbox-install.md).
+
+```
+XBOX=<console address> python3 tools/xbox.py setup build/XIonXbox-xbox.msix "<...>/FINAL FANTASY XI"
+python3 tools/xbox.py deploy build/XIonXbox-xbox.msix     # each new build
+python3 tools/xbox.py logs <folder>                         # host64.log, app.log, samples.bin
+```
+
+Claude Code skills for the same: `.claude/skills/xbox-setup`, `xbox-deploy`, `xbox-logs`.
 
 ```
 python3 tools/frame_budget.py ../FFXIRecompile/build/run_phoenix_0903b.log [--factor 6.5] [--min-draws 500]

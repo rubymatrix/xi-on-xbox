@@ -1,0 +1,6 @@
+__pycache__/
+*.log
+build/
+*.user
+.vs/
+shell/LocalDefaults.h

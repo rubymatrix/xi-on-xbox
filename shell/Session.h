@@ -1,5 +1,5 @@
 // Signing in before the game starts: a LandSandBoat server. The host signs in itself, as
-// xiloader does (FFXIRecompile's host/lsb_login.c); here we only check the server answers.
+// xiloader does (xi-on-mac's host/lsb_login.c); here we only check the server answers.
 #pragma once
 
 #include <string>
@@ -22,5 +22,5 @@ struct SignInResult
 // Blocking: call off the UI thread.
 SignInResult SignIn(LoginDetails const& d);
 
-// The host's sign-in arguments for this login (FFXIRecompile's host/host64.c).
+// The host's sign-in arguments for this login (xi-on-mac's host/host64.c).
 std::vector<std::string> HostArguments(LoginDetails const& d);

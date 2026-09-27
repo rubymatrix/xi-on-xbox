@@ -32,7 +32,7 @@ Read `host64.log` and report:
 
 `samples.bin` is only readable with the linker map of **the same build** of `XIonXbox.exe`, which is on the
 machine that built it (usually the Windows PC):
-`python tools/sample_report.py samples.bin <exe.map> [--top 40]` (in FFXIRecompile).
+`python tools/sample_report.py samples.bin <exe.map> [--top 40]` (in xi-on-mac).
 Don't analyze it against a different build's map. Every sample would be attributed to the wrong function.
 
 ## Send to another machine

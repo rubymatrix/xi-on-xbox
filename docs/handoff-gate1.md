@@ -20,7 +20,7 @@ with the table from `frame_budget.py`.
 
 ## Background you need
 
-- **FFXIRecompile** (`git@github.com:rubymatrix/xi-on-mac.git`, branch `main`, clean at
+- **xi-on-mac** (`git@github.com:rubymatrix/xi-on-mac.git`, branch `main`, clean at
   `253b23c` or later) statically recompiles `FFXiMain.dll` and `FFXi.dll` from x86-32 to C.
   Its portable runtime (`runtime/portable/`) emulates the Win32 surface the game uses:
   files, registry, threads, sockets, DirectInput, DirectSound, polcore and D3D8. It sits on
@@ -33,7 +33,7 @@ with the table from `frame_budget.py`.
   and `build/` are gitignored. The player's install is the input.
 - **This FFXIXbox repo** will hold the UWP shell and the packaging. Changes to the
   runtime (the profile line in `gfx_null.c`, the UWP fixes in `plat_win.c`, a new SDL stub)
-  go into **FFXIRecompile**, in their own commits, so macOS and Windows keep building.
+  go into **xi-on-mac**, in their own commits, so macOS and Windows keep building.
   Rebuild on macOS isn't possible from Windows: keep changes out of `plat_posix.c` and
   `gfx_metal.m`, and anything shared must stay plain C11.
 
@@ -50,7 +50,7 @@ with the table from `frame_budget.py`.
 
 ## Steps
 
-### 1. A profile line for `gfx_null.c` (FFXIRecompile)
+### 1. A profile line for `gfx_null.c` (xi-on-mac)
 
 Port the frame profile from `gfx_metal.m` (`g_prof`, `gfx_prof_front`, `gfx_prof_shim`,
 `prof_frame`) into `gfx_null.c`, which today stubs them out (lines 57–61). Print exactly
@@ -70,7 +70,7 @@ version does. Use `QueryPerformanceCounter` for `gfx_now_ns` on Windows (or
 **Check:** desktop `build\host64.exe` with `FFXI_PROFILE=1` prints the line every 2 s,
 and `frame_budget.py` reads the log.
 
-### 2. An SDL stub and scripted input (FFXIRecompile)
+### 2. An SDL stub and scripted input (xi-on-mac)
 
 `user32.c`, `input.c`, `dsound.c` and `dinput.c` call about 40 distinct SDL functions
 (`grep -n "SDL_[A-Za-z]*(" runtime/portable/*.c`). Write
@@ -104,7 +104,7 @@ it takes. The zone-in is confirmed when the profile's draw count goes above 500.
 Add a `host64-headless` target to `tools\build.py`: the same sources, plus `sdl_stub.c`,
 without `SDL3.lib`. **Check:** it reaches a zone on the desktop, by the draw count.
 
-### 3. The UWP app partition (FFXIRecompile)
+### 3. The UWP app partition (xi-on-mac)
 
 Compile the runtime with `/DWINAPI_FAMILY=WINAPI_FAMILY_APP` first. The compiler then names
 every call outside the partition, without deploying anything. Expected changes in
@@ -129,7 +129,7 @@ development" workload, a recent Windows 10/11 SDK), x64 only:
 
 - `IFrameworkView::Run` starts the host on its own thread, then runs the `CoreWindow`
   event loop until the host exits. Rename `host64`'s `main` for this build
-  (`/Dmain=host_main`) and link the FFXIRecompile objects: the generated C, the runtime,
+  (`/Dmain=host_main`) and link the xi-on-mac objects: the generated C, the runtime,
   `gfx_null.c`, `sdl_stub.c` and `lsb_login.c`.
 - **Arguments** come from `LocalState\args.txt`, one argument per line. That keeps the
   password out of the package.
@@ -151,7 +151,7 @@ development" workload, a recent Windows 10/11 SDK), x64 only:
 - **After installing:** in Dev Home on the console, open the app's details and set its
   type to **Game**. As an "App" it gets about 1 GB of RAM and a reduced CPU and GPU share,
   and the measurement would be meaningless.
-- Build it with the options FFXIRecompile uses (`/O2`). **Don't use `/arch:AVX2`**: the
+- Build it with the options xi-on-mac uses (`/O2`). **Don't use `/arch:AVX2`**: the
   Jaguar has AVX but not AVX2. The default (SSE2) is safe.
 
 ### 5. Server and login
@@ -186,12 +186,12 @@ the OS build, and the app type (it must say Game).
 
 - An Xbox One in developer mode, paired with Visual Studio or reachable through Device
   Portal. (Dev mode needs a Microsoft Partner Center developer account, a one-time $19.)
-- Their FFXI install on the Windows machine. FFXIRecompile's `python tools\prepare.py`
+- Their FFXI install on the Windows machine. xi-on-mac's `python tools\prepare.py`
   unpacks it into `generated\`, if that hasn't been done there already.
 - The server and the account to log in with (step 5).
 - The key sequence from the title screen to the zone, if it can't be worked out.
 
-## Useful references in FFXIRecompile
+## Useful references in xi-on-mac
 
 | what | where |
 |---|---|

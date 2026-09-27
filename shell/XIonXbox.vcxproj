@@ -22,8 +22,8 @@
     <ApplicationTypeRevision>10.0</ApplicationTypeRevision>
     <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
     <WindowsTargetPlatformMinVersion>10.0.19041.0</WindowsTargetPlatformMinVersion>
-    <!-- the game: FFXIRecompile's `python tools\build.py uwp-lib` -->
-    <FFXIRecompileDir Condition="'$(FFXIRecompileDir)' == ''">$(MSBuildThisFileDirectory)..\..\FFXIRecompile\</FFXIRecompileDir>
+    <!-- the game: xi-on-mac's `python tools\build.py uwp-lib` -->
+    <XiOnMacDir Condition="'$(XiOnMacDir)' == ''">$(MSBuildThisFileDirectory)..\..\xi-on-mac\</XiOnMacDir>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
@@ -51,19 +51,19 @@
       <CompileAsWinRT>false</CompileAsWinRT>
       <WarningLevel>Level3</WarningLevel>
       <AdditionalOptions>/bigobj /utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\cppwinrt;$(FFXIRecompileDir)runtime\portable;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\cppwinrt;$(XiOnMacDir)runtime\portable;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Optimization Condition="'$(Configuration)' == 'Release'">MaxSpeed</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <!-- FFXIRecompile's tools/sample_report.py resolves FFXI_SAMPLE's addresses with it -->
+      <!-- xi-on-mac's tools/sample_report.py resolves FFXI_SAMPLE's addresses with it -->
       <GenerateMapFile>true</GenerateMapFile>
       <MapFileName>$(OutDir)$(TargetName).map</MapFileName>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
       <!-- WindowsApp.lib is the only Windows import library: an unresolved import is a Win32 call UWP
            does not allow -->
-      <AdditionalDependencies>$(FFXIRecompileDir)build\uwp\ffxi_uwp.lib;WindowsApp.lib;xaudio2.lib;d3d12.lib;dxgi.lib;d3dcompiler.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(XiOnMacDir)build\uwp\ffxi_uwp.lib;WindowsApp.lib;xaudio2.lib;d3d12.lib;dxgi.lib;d3dcompiler.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

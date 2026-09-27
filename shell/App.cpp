@@ -1,5 +1,5 @@
-// XI on Xbox: the UWP app. It signs in (LoginScreen), then runs FFXIRecompile's game host in this
-// process (GameHost), from FFXIRecompile's build/uwp/ffxi_uwp.lib.
+// XI on Xbox: the UWP app. It signs in (LoginScreen), then runs xi-on-mac's game host in this
+// process (GameHost), from xi-on-mac's build/uwp/ffxi_uwp.lib.
 #include "pch.h"
 
 #include "GameHost.h"

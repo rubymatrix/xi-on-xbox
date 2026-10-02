@@ -38,12 +38,22 @@ Resolution ParseResolution(std::string const& text)
     return { w, h };
 }
 
+int BackgroundResolution(Resolution r)
+{
+    int bg = 1024;
+    while (bg < r.first && bg < 2048)
+        bg *= 2;
+    return bg;
+}
+
 bool SetGameResolution(std::wstring const& reg_path, Resolution r)
 {
     auto [w, h] = r;
     int ui = h >= 1080 ? 2 : 1;
-    char const* keys[] = { "\"0001\"", "\"0002\"", "\"0037\"", "\"0038\"" };
-    int values[] = { w, h, w / ui, h / ui };
+    int bg = BackgroundResolution(r);
+    char const* keys[] = { "\"0001\"", "\"0002\"", "\"0037\"", "\"0038\"", "\"0003\"", "\"0004\"" };
+    int values[] = { w, h, w / ui, h / ui, bg, bg };
+    constexpr int nkeys = (int)std::size(keys);
     auto line_for = [](char const* key, int v) {
         char s[64];
         snprintf(s, sizeof s, "%s=dword:%08x", key, (unsigned)v);
@@ -70,7 +80,7 @@ bool SetGameResolution(std::wstring const& reg_path, Resolution r)
     auto is_game_key = [](std::string const& l) {
         return l.size() > 2 && l.front() == '[' && l.find("\\SquareEnix\\FinalFantasyXI]") != std::string::npos;
     };
-    bool done[4] = {};
+    bool done[nkeys] = {};
     bool in_game = false;
     size_t section_end = std::string::npos; // where missing values go
     for (size_t i = 0; i < lines.size(); ++i)
@@ -85,7 +95,7 @@ bool SetGameResolution(std::wstring const& reg_path, Resolution r)
         if (!in_game)
             continue;
         section_end = i + 1;
-        for (int k = 0; k < 4; ++k)
+        for (int k = 0; k < nkeys; ++k)
             if (lines[i].rfind(keys[k], 0) == 0 && lines[i].size() > strlen(keys[k]) && lines[i][strlen(keys[k])] == '=')
                 lines[i] = line_for(keys[k], values[k]), done[k] = true;
     }
@@ -95,7 +105,7 @@ bool SetGameResolution(std::wstring const& reg_path, Resolution r)
         lines.push_back("[HKEY_LOCAL_MACHINE\\SOFTWARE\\PlayOnlineUS\\SquareEnix\\FinalFantasyXI]");
         section_end = lines.size();
     }
-    for (int k = 3; k >= 0; --k)
+    for (int k = nkeys - 1; k >= 0; --k)
         if (!done[k])
             lines.insert(lines.begin() + (ptrdiff_t)section_end, line_for(keys[k], values[k]));
 

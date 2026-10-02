@@ -161,7 +161,7 @@ namespace
 
     // The game's settings (its registry key) for a player who brought none: windowed (the view is the
     // window) and the retail controller layout. Written once; the game keeps its own changes in it,
-    // and the resolution is set on every start (SetGameResolution).
+    // and the resolutions (window, interface, background) are set on every start (SetGameResolution).
     void write_default_settings(std::wstring const& path)
     {
         FILE* f = _wfopen(path.c_str(), L"w");
@@ -171,8 +171,6 @@ namespace
             "REGEDIT4\n\n"
             "[HKEY_LOCAL_MACHINE\\SOFTWARE\\PlayOnlineUS\\SquareEnix\\FinalFantasyXI]\n"
             "\"0000\"=dword:00000006\n"          // mip mapping
-            "\"0003\"=dword:00001000\n"          // background resolution
-            "\"0004\"=dword:00001000\n"
             "\"0007\"=dword:00000001\n"          // sound
             "\"0011\"=dword:00000001\n"          // environment animation
             "\"0017\"=dword:00000001\n"          // bump mapping

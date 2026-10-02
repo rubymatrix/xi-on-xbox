@@ -1,4 +1,4 @@
-// Runs xi-on-mac's game host (host64's main, linked in as host_main from ffxi_uwp.lib) on its
+// Runs xi-on-anything's game host (host64's main, linked in as host_main from ffxi_uwp.lib) on its
 // own thread, and connects it to the app: the window's keyboard, mouse and focus, the controller
 // (Windows.Gaming.Input), a log in LocalState, and the picture: the Direct3D 12 back end's swap chain
 // in a SwapChainPanel. The log's tail shows on top until the first frame, and again when the game ends.

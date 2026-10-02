@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Project host64's per-frame CPU cost onto a slower CPU (Xbox One's Jaguar by default).
 
-Reads the FFXI_PROFILE=1 output of xi-on-mac's host64: pairs of lines
+Reads the FFXI_PROFILE=1 output of xi-on-anything's host64: pairs of lines
 
     [gfx] 58.4 fps: frame 17.11 ms = game code 2.53 + API calls 14.58 (...) | GPU 7.28 ms | 753 draws, ...
     [gfx]   API time (2 s): Sleep 1497 ms/1324 IDirect3DDevice8::DrawPrimitiveUP 101 ms/77571 ...

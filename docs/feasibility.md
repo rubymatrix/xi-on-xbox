@@ -5,7 +5,7 @@ Gate 0 of the plan: before building anything, check whether the recompiled game 
 
 ## Method
 
-`tools/frame_budget.py` reads the `FFXI_PROFILE=1` output of xi-on-mac's `host64` on
+`tools/frame_budget.py` reads the `FFXI_PROFILE=1` output of xi-on-anything's `host64` on
 macOS (M1 Max). The profile covers the game thread only. Busy time per frame is
 frame time minus the time in `Sleep`, because the game's frame limiter spins in `Sleep(1)`
 loops that are idle time, not work. Busy time times a per-core slowdown factor gives the

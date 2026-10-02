@@ -118,4 +118,4 @@ remove it with `tools/xbox.py rmdir local:\LocalState SquareEnix`.
 The app writes to its LocalState: `host64.log` (every `[app]`, `[lsb]`, `[recomp]` and `[gfx]` line),
 `app.log` (the shell), and, with profiling on, `samples.bin`. `tools/xbox.py logs <folder>` copies them.
 `samples.bin` has to be read against the linker map of **the same build** of `XIonXbox.exe`:
-`xi-on-mac/tools/sample_report.py samples.bin <exe.map>`. That map is on the machine that built the exe.
+`xi-on-anything/tools/sample_report.py samples.bin <exe.map>`. That map is on the machine that built the exe.
